@@ -56,7 +56,7 @@ export const DashboardPage = () => {
       description="A premium multi-role dashboard that centralizes discovery, registrations, notifications, and platform momentum."
       actions={
         <>
-          <ButtonLink to="/create-event">Create Event</ButtonLink>
+          {user?.role !== 'participant' ? <ButtonLink to="/create-event">Create Event</ButtonLink> : null}
           <ButtonLink to="/calendar" variant="secondary">
             Open Calendar
           </ButtonLink>
@@ -145,6 +145,31 @@ export const OrganizerDashboardPage = () => {
             ))}
           </div>
         </GlassCard>
+      </div>
+      <div className="mt-6">
+        {(payload.events || []).length ? (
+          <DataTable
+            columns={[
+              { key: 'title', label: 'Event' },
+              { key: 'status', label: 'Status' },
+              {
+                key: 'approved',
+                label: 'Approval',
+                render: (value) => (value ? 'Approved' : 'Pending Admin Approval')
+              },
+              { key: 'startsAt', label: 'Start', render: (value) => formatDate(value, { withTime: true }) },
+              { key: 'registeredCount', label: 'Registrations' }
+            ]}
+            rows={payload.events}
+          />
+        ) : (
+          <EmptyState
+            title="No organizer events yet"
+            description="Create your first event to see it appear here with its approval status and performance."
+            ctaLabel="Create Event"
+            ctaTo="/create-event"
+          />
+        )}
       </div>
     </DashboardShell>
   );
@@ -262,6 +287,10 @@ export const EventDetailsPage = () => {
 };
 
 export const CreateEventPage = ({ isEdit = false }) => {
+  const navigate = useNavigate();
+  const { data: landingData } = useAsync(() => publicApi.landing(), []);
+  const categories = landingData?.categories || [];
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -279,38 +308,124 @@ export const CreateEventPage = ({ isEdit = false }) => {
     agenda: '[{"time":"10:00 AM","title":"Opening Session","speaker":"Host"}]'
   });
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleChange = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  const handleSubmit = async (submitEvent) => {
+    submitEvent.preventDefault();
+
+    if (!form.category) {
+      toast.error('Please choose an event category.');
+      return;
+    }
+
+    if (!form.title || !form.description || !form.shortDescription || !form.venue || !form.startsAt || !form.endsAt || !form.registrationDeadline) {
+      toast.error('Please fill all important event details before submitting.');
+      return;
+    }
+
     const payload = new FormData();
     Object.entries(form).forEach(([key, value]) => payload.append(key, value));
-    toast.success(isEdit ? 'Event update request prepared.' : 'Create event form is wired. Add a category id from seeded data to submit fully.');
-    if (!isEdit) {
-      try {
-        await eventApi.create(payload);
-      } catch (error) {
-        // UI still demonstrates the complete flow even before the database is seeded.
+
+    try {
+      setSubmitting(true);
+
+      if (isEdit) {
+        toast.success('Edit flow can be wired to a selected event next.');
+        return;
       }
+
+      const response = await eventApi.create(payload);
+      const createdEvent = response.data.event;
+      const approvalText = createdEvent.approved
+        ? 'Your event is live now.'
+        : 'Your event was created and is now waiting for admin approval before students can see it.';
+
+      toast.success(approvalText);
+      navigate('/organizer-dashboard');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Event creation failed. Please review the form and try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const fieldConfig = [
+    ['title', 'Title', 'text'],
+    ['shortDescription', 'Short Description', 'text'],
+    ['description', 'Description', 'text'],
+    ['venue', 'Venue', 'text'],
+    ['capacity', 'Capacity', 'number'],
+    ['price', 'Price', 'number'],
+    ['startsAt', 'Starts At', 'datetime-local'],
+    ['endsAt', 'Ends At', 'datetime-local'],
+    ['registrationDeadline', 'Registration Deadline', 'datetime-local'],
+    ['tags', 'Tags JSON', 'text'],
+    ['sponsors', 'Sponsors JSON', 'text'],
+    ['agenda', 'Agenda JSON', 'text']
+  ];
 
   return (
     <DashboardShell
       title={isEdit ? 'Edit Event Experience' : 'Create a Premium Event'}
-      description="Craft a launch-ready event with copy, timing, capacity, sponsorship, agenda, and presentation detail."
+      description="Craft a launch-ready event with copy, timing, capacity, sponsorship, agenda, and presentation detail. Organizer-created events appear in the organizer dashboard immediately and become visible to students after admin approval."
     >
       <form className="grid gap-6 lg:grid-cols-2" onSubmit={handleSubmit}>
-        {Object.entries(form).map(([key, value]) => (
-          <label key={key} className="block">
-            <span className="mb-2 block text-sm capitalize text-slate-600">{key}</span>
-            <input
-              className="w-full rounded-[24px] border border-white/70 bg-white/70 px-4 py-4 outline-none"
-              value={value}
-              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-            />
+        <label className="block">
+          <span className="mb-2 block text-sm text-slate-600">Category</span>
+          <select
+            className="w-full rounded-[24px] border border-white/70 bg-white/70 px-4 py-4 outline-none"
+            value={form.category}
+            onChange={(e) => handleChange('category', e.target.value)}
+          >
+            <option value="">Select a category</option>
+            {categories.map((category) => (
+              <option key={category._id} value={category._id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block text-sm text-slate-600">Mode</span>
+          <select
+            className="w-full rounded-[24px] border border-white/70 bg-white/70 px-4 py-4 outline-none"
+            value={form.mode}
+            onChange={(e) => handleChange('mode', e.target.value)}
+          >
+            <option value="offline">Offline</option>
+            <option value="online">Online</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
+        </label>
+
+        {fieldConfig.map(([key, label, type]) => (
+          <label key={key} className={key === 'description' || key === 'agenda' ? 'block lg:col-span-2' : 'block'}>
+            <span className="mb-2 block text-sm text-slate-600">{label}</span>
+            {key === 'description' || key === 'agenda' ? (
+              <textarea
+                className="min-h-[140px] w-full rounded-[24px] border border-white/70 bg-white/70 px-4 py-4 outline-none"
+                value={form[key]}
+                onChange={(e) => handleChange(key, e.target.value)}
+              />
+            ) : (
+              <input
+                className="w-full rounded-[24px] border border-white/70 bg-white/70 px-4 py-4 outline-none"
+                type={type}
+                value={form[key]}
+                onChange={(e) => handleChange(key, e.target.value)}
+              />
+            )}
           </label>
         ))}
+        <GlassCard className="lg:col-span-2">
+          <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Approval Flow</p>
+          <p className="mt-4 text-slate-600">
+            Organizer-created events are saved with a pending approval state. They show up in the organizer dashboard immediately, but they become visible on the student portal only after an admin approves them.
+          </p>
+        </GlassCard>
         <div className="lg:col-span-2">
-          <Button>{isEdit ? 'Save Event Changes' : 'Submit Event'}</Button>
+          <Button disabled={submitting}>{submitting ? 'Submitting...' : isEdit ? 'Save Event Changes' : 'Submit Event'}</Button>
         </div>
       </form>
     </DashboardShell>
