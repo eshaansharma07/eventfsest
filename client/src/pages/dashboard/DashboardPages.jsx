@@ -3,7 +3,7 @@ import { Calendar, Heart, IndianRupee, LayoutDashboard, MessageSquareText, PlusC
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import toast from 'react-hot-toast';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { dashboardApi, eventApi, publicApi } from '../../api/endpoints';
 import { useAsync } from '../../hooks/useAsync';
 import { useAuth } from '../../context/AuthContext';
@@ -97,11 +97,31 @@ export const DashboardPage = () => {
         {events.length ? (
           <DataTable
             columns={[
-              { key: 'title', label: 'Event' },
+              {
+                key: 'title',
+                label: 'Event',
+                render: (value, row) => (
+                  <Link className="font-semibold text-slate-950 underline-offset-4 hover:underline" to={`/events/${row.slug}`}>
+                    {value}
+                  </Link>
+                )
+              },
               { key: 'venue', label: 'Venue' },
               { key: 'startsAt', label: 'Start', render: (value) => formatDate(value, { withTime: true }) },
               { key: 'registeredCount', label: 'Registrations' },
-              { key: 'status', label: 'Status' }
+              { key: 'status', label: 'Status' },
+              {
+                key: '_id',
+                label: 'Open',
+                render: (_, row) => (
+                  <Link
+                    className="inline-flex rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:-translate-y-0.5"
+                    to={`/events/${row.slug}`}
+                  >
+                    View Event
+                  </Link>
+                )
+              }
             ]}
             rows={events.slice(0, 6)}
           />
