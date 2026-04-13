@@ -216,6 +216,20 @@ export const AdminDashboardPage = () => {
     }
   };
 
+  const handleDeleteEvent = async (eventId) => {
+    const confirmed = window.confirm('Delete this event permanently? This cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      await eventApi.remove(eventId);
+      toast.success('Event deleted successfully.');
+      const refreshed = await dashboardApi.admin();
+      setData(refreshed.data);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Delete action failed.');
+    }
+  };
+
   return (
     <DashboardShell
       title="Admin Intelligence Layer"
@@ -272,6 +286,33 @@ export const AdminDashboardPage = () => {
             ctaTo="/analytics"
           />
         )}
+      </div>
+      <div className="mt-6">
+        {(payload.eventList || []).length ? (
+          <DataTable
+            columns={[
+              { key: 'title', label: 'All Events' },
+              { key: 'organizer', label: 'Organizer', render: (_, row) => row.organizer?.name || 'Unknown' },
+              { key: 'category', label: 'Category', render: (_, row) => row.category?.name || 'General' },
+              { key: 'status', label: 'Status' },
+              {
+                key: 'approved',
+                label: 'Approval',
+                render: (value) => (value ? 'Approved' : 'Pending')
+              },
+              {
+                key: '_id',
+                label: 'Remove',
+                render: (value) => (
+                  <Button className="px-4 py-2 text-xs" variant="secondary" onClick={() => handleDeleteEvent(value)}>
+                    Delete
+                  </Button>
+                )
+              }
+            ]}
+            rows={payload.eventList}
+          />
+        ) : null}
       </div>
     </DashboardShell>
   );
