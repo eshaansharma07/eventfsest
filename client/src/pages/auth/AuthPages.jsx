@@ -6,6 +6,12 @@ import { useAuth } from '../../context/AuthContext';
 import { PageLayout } from '../../components/layout/PageLayout';
 import { Button } from '../../components/common/Button';
 
+const getDashboardPath = (role) => {
+  if (role === 'admin') return '/admin-dashboard';
+  if (role === 'organizer') return '/organizer-dashboard';
+  return '/dashboard';
+};
+
 const AuthShell = ({ title, subtitle, children }) => (
   <PageLayout>
     <section className="px-6 py-20">
@@ -35,8 +41,8 @@ export const LoginPage = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    await login(form);
-    navigate('/dashboard');
+    const response = await login(form);
+    navigate(getDashboardPath(response.data.user.role));
   };
 
   return (
@@ -70,8 +76,8 @@ export const SignupPage = () => {
     event.preventDefault();
     const payload = new FormData();
     Object.entries(form).forEach(([key, value]) => payload.append(key, value));
-    await signup(payload);
-    navigate('/dashboard');
+    const response = await signup(payload);
+    navigate(getDashboardPath(response.data.user.role));
   };
 
   return (

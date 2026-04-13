@@ -176,8 +176,25 @@ export const OrganizerDashboardPage = () => {
 };
 
 export const AdminDashboardPage = () => {
-  const { data } = useAsync(() => dashboardApi.admin(), []);
+  const { data, setData } = useAsync(() => dashboardApi.admin(), []);
   const payload = data || {};
+
+  const handleApproval = async (eventId, action) => {
+    try {
+      if (action === 'approve') {
+        await dashboardApi.approveEvent(eventId);
+        toast.success('Event approved and now visible to students.');
+      } else {
+        await dashboardApi.rejectEvent(eventId);
+        toast.success('Event moved out of the approval queue.');
+      }
+
+      const refreshed = await dashboardApi.admin();
+      setData(refreshed.data);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Approval action failed.');
+    }
+  };
 
   return (
     <DashboardShell
@@ -201,6 +218,40 @@ export const AdminDashboardPage = () => {
           title="Organizer Performance"
           data={(payload.organizerPerformance || []).map((item) => ({ name: item._id?.slice?.(-4) || 'Org', value: item.registrations }))}
         />
+      </div>
+      <div className="mt-6">
+        {(payload.pendingEventList || []).length ? (
+          <DataTable
+            columns={[
+              { key: 'title', label: 'Pending Event' },
+              { key: 'organizer', label: 'Organizer', render: (_, row) => row.organizer?.name || 'Unknown' },
+              { key: 'category', label: 'Category', render: (_, row) => row.category?.name || 'General' },
+              { key: 'startsAt', label: 'Start', render: (value) => formatDate(value, { withTime: true }) },
+              {
+                key: '_id',
+                label: 'Action',
+                render: (value) => (
+                  <div className="flex gap-2">
+                    <Button className="px-4 py-2 text-xs" onClick={() => handleApproval(value, 'approve')}>
+                      Approve
+                    </Button>
+                    <Button className="px-4 py-2 text-xs" variant="secondary" onClick={() => handleApproval(value, 'reject')}>
+                      Reject
+                    </Button>
+                  </div>
+                )
+              }
+            ]}
+            rows={payload.pendingEventList}
+          />
+        ) : (
+          <EmptyState
+            title="No pending events"
+            description="All organizer submissions have been reviewed. New drafts waiting for approval will appear here."
+            ctaLabel="Open Analytics"
+            ctaTo="/analytics"
+          />
+        )}
       </div>
     </DashboardShell>
   );

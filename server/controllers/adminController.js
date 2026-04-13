@@ -6,7 +6,7 @@ import Notification from '../models/Notification.js';
 import Registration from '../models/Registration.js';
 
 export const getAdminDashboard = asyncHandler(async (req, res) => {
-  const [users, events, registrations, pendingEvents, featuredEvents, userGrowth, organizerPerformance] =
+  const [users, events, registrations, pendingEvents, featuredEvents, userGrowth, organizerPerformance, pendingEventList] =
     await Promise.all([
       User.countDocuments(),
       Event.countDocuments(),
@@ -32,7 +32,11 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
         },
         { $sort: { registrations: -1 } },
         { $limit: 5 }
-      ])
+      ]),
+      Event.find({ approved: false })
+        .populate('organizer', 'name email')
+        .populate('category', 'name')
+        .sort({ createdAt: -1 })
     ]);
 
   res.json({
@@ -45,7 +49,8 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
       featuredEvents
     },
     userGrowth,
-    organizerPerformance
+    organizerPerformance,
+    pendingEventList
   });
 });
 
