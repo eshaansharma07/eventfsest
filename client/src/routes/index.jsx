@@ -1,19 +1,55 @@
+import { lazy } from 'react';
 import { ProtectedRoute } from './ProtectedRoute';
-import { LandingPage } from '../pages/LandingPage';
-import { LoginPage, SignupPage, ForgotPasswordPage, ResetPasswordPage } from '../pages/auth/AuthPages';
-import {
-  AdminDashboardPage,
-  AnalyticsPage,
-  CalendarPage,
-  CreateEventPage,
-  DashboardPage,
-  EventDetailsPage,
-  FavoritesPage,
-  MyRegistrationsPage,
-  NotificationsPage,
-  OrganizerDashboardPage
-} from '../pages/dashboard/DashboardPages';
-import { AboutPage, ContactPage, FAQPage, NotFoundPage, PrivacyPage, TermsPage } from '../pages/misc/StaticPages';
+
+const LandingPage = lazy(() => import('../pages/LandingPage').then((module) => ({ default: module.LandingPage })));
+const LoginPage = lazy(() => import('../pages/auth/AuthPages').then((module) => ({ default: module.LoginPage })));
+const SignupPage = lazy(() => import('../pages/auth/AuthPages').then((module) => ({ default: module.SignupPage })));
+const ForgotPasswordPage = lazy(() =>
+  import('../pages/auth/AuthPages').then((module) => ({ default: module.ForgotPasswordPage }))
+);
+const ResetPasswordPage = lazy(() =>
+  import('../pages/auth/AuthPages').then((module) => ({ default: module.ResetPasswordPage }))
+);
+const DashboardPage = lazy(() =>
+  import('../pages/dashboard/DashboardPages').then((module) => ({ default: module.DashboardPage }))
+);
+const OrganizerDashboardPage = lazy(() =>
+  import('../pages/dashboard/DashboardPages').then((module) => ({ default: module.OrganizerDashboardPage }))
+);
+const AdminDashboardPage = lazy(() =>
+  import('../pages/dashboard/DashboardPages').then((module) => ({ default: module.AdminDashboardPage }))
+);
+const EventDetailsPage = lazy(() =>
+  import('../pages/dashboard/DashboardPages').then((module) => ({ default: module.EventDetailsPage }))
+);
+const CreateEventPage = lazy(() =>
+  import('../pages/dashboard/DashboardPages').then((module) => ({ default: module.CreateEventPage }))
+);
+const MyRegistrationsPage = lazy(() =>
+  import('../pages/dashboard/DashboardPages').then((module) => ({ default: module.MyRegistrationsPage }))
+);
+const FavoritesPage = lazy(() =>
+  import('../pages/dashboard/DashboardPages').then((module) => ({ default: module.FavoritesPage }))
+);
+const NotificationsPage = lazy(() =>
+  import('../pages/dashboard/DashboardPages').then((module) => ({ default: module.NotificationsPage }))
+);
+const CalendarPage = lazy(() =>
+  import('../pages/dashboard/DashboardPages').then((module) => ({ default: module.CalendarPage }))
+);
+const AnalyticsPage = lazy(() =>
+  import('../pages/dashboard/DashboardPages').then((module) => ({ default: module.AnalyticsPage }))
+);
+const ContactPage = lazy(() => import('../pages/misc/StaticPages').then((module) => ({ default: module.ContactPage })));
+const FAQPage = lazy(() => import('../pages/misc/StaticPages').then((module) => ({ default: module.FAQPage })));
+const AboutPage = lazy(() => import('../pages/misc/StaticPages').then((module) => ({ default: module.AboutPage })));
+const TermsPage = lazy(() => import('../pages/misc/StaticPages').then((module) => ({ default: module.TermsPage })));
+const PrivacyPage = lazy(() =>
+  import('../pages/misc/StaticPages').then((module) => ({ default: module.PrivacyPage }))
+);
+const NotFoundPage = lazy(() =>
+  import('../pages/misc/StaticPages').then((module) => ({ default: module.NotFoundPage }))
+);
 
 const EditEventPage = () => <CreateEventPage isEdit />;
 

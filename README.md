@@ -83,11 +83,43 @@ README.md
 - Vercel builds the React app from `client/package.json`.
 - Configure `VITE_API_URL` to your deployed backend API path, typically `https://<domain>/api`.
 
+Recommended frontend environment variable:
+
+- `VITE_API_URL=https://your-project.vercel.app/api`
+
 ### Backend on Vercel
 
 - The backend is exposed through `server/api/index.js`.
 - The Express app is exported without a traditional `listen()` call.
 - MongoDB connection is initialized through `connectDB()` for serverless compatibility.
+
+Required backend environment variables on Vercel:
+
+- `MONGODB_URI=mongodb+srv://...`
+- `JWT_SECRET=your-strong-production-secret`
+- `JWT_EXPIRES_IN=7d`
+- `CLIENT_URL=https://your-project.vercel.app`
+- `EMAIL_HOST=smtp.gmail.com`
+- `EMAIL_PORT=587`
+- `EMAIL_USER=your-email`
+- `EMAIL_PASS=your-app-password`
+- `EMAIL_FROM=EventSphere <no-reply@eventsphere.app>`
+- `CLOUDINARY_CLOUD_NAME=...`
+- `CLOUDINARY_API_KEY=...`
+- `CLOUDINARY_API_SECRET=...`
+
+### Suggested Vercel Setup
+
+1. Import the GitHub repository into Vercel.
+2. Keep the root directory as the repository root.
+3. Add all backend env vars in the Vercel project settings.
+4. Add `VITE_API_URL` in the frontend environment settings.
+5. Redeploy after every environment change.
+6. Test these deployed routes first:
+   - `/`
+   - `/login`
+   - `/dashboard`
+   - `/api/health`
 
 ### Production Checklist
 

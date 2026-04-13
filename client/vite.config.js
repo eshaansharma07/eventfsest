@@ -12,7 +12,8 @@ export default defineConfig({
         manualChunks: {
           reactVendor: ['react', 'react-dom', 'react-router-dom'],
           motionVendor: ['framer-motion'],
-          chartsVendor: ['recharts', 'react-big-calendar', 'moment'],
+          chartsVendor: ['recharts'],
+          calendarVendor: ['react-big-calendar', 'moment'],
           uiVendor: ['lucide-react', 'react-hot-toast', 'axios', 'jspdf']
         }
       }
