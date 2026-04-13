@@ -136,6 +136,13 @@ export const DashboardPage = () => {
 export const OrganizerDashboardPage = () => {
   const { data } = useAsync(() => dashboardApi.organizer(), []);
   const payload = data || {};
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const activeEventId = selectedEventId || payload.events?.[0]?._id || '';
+  const { data: participantData } = useAsync(
+    () => (activeEventId ? eventApi.participants(activeEventId) : Promise.resolve({ data: { registrations: [] } })),
+    [activeEventId]
+  );
+  const participantRows = participantData?.registrations || [];
 
   return (
     <DashboardShell
@@ -187,6 +194,58 @@ export const OrganizerDashboardPage = () => {
             title="No organizer events yet"
             description="Create your first event to see it appear here with its approval status and performance."
             ctaLabel="Create Event"
+            ctaTo="/create-event"
+          />
+        )}
+      </div>
+      <div className="mt-6 grid gap-6 xl:grid-cols-[0.36fr_0.64fr]">
+        <GlassCard>
+          <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Registered Students</p>
+          <p className="mt-3 text-sm text-slate-600">Choose an event to see all registered participants with ticket and contact details.</p>
+          <div className="mt-6 space-y-3">
+            {(payload.events || []).map((event) => (
+              <button
+                key={event._id}
+                className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${
+                  activeEventId === event._id ? 'border-slate-900 bg-slate-900 text-white' : 'border-white/70 bg-white/60 text-slate-800'
+                }`}
+                onClick={() => setSelectedEventId(event._id)}
+              >
+                <p className="font-semibold">{event.title}</p>
+                <p className={`mt-1 text-sm ${activeEventId === event._id ? 'text-white/70' : 'text-slate-500'}`}>
+                  {event.registeredCount} registered
+                </p>
+              </button>
+            ))}
+          </div>
+          {activeEventId ? (
+            <a
+              className="mt-6 inline-flex rounded-full bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+              href={eventApi.exportCsv(activeEventId)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Export CSV
+            </a>
+          ) : null}
+        </GlassCard>
+        {participantRows.length ? (
+          <DataTable
+            columns={[
+              { key: 'participant', label: 'Student', render: (_, row) => row.participant?.name || 'Unknown' },
+              { key: 'participant_email', label: 'Email', render: (_, row) => row.participant?.email || 'No email' },
+              { key: 'participant_institution', label: 'Institution', render: (_, row) => row.participant?.institution || 'Not provided' },
+              { key: 'ticketCode', label: 'Ticket' },
+              { key: 'status', label: 'Status' },
+              { key: 'createdAt', label: 'Registered On', render: (value) => formatDate(value, { withTime: true }) }
+            ]}
+            rows={participantRows}
+          />
+        ) : (
+          <EmptyState
+            title="No students registered yet"
+            description="Once students register, their names, emails, institutions, and ticket codes will appear here."
+            ctaLabel="Create More Events"
             ctaTo="/create-event"
           />
         )}
@@ -551,15 +610,39 @@ export const MyRegistrationsPage = () => {
   return (
     <DashboardShell title="My Registrations" description="Track your tickets, QR-ready entries, and event journey history.">
       {registrations.length ? (
-        <DataTable
-          columns={[
-            { key: 'event', label: 'Event', render: (_, row) => row.event?.title },
-            { key: 'ticketCode', label: 'Ticket' },
-            { key: 'status', label: 'Status' },
-            { key: 'createdAt', label: 'Booked On', render: (value) => formatDate(value) }
-          ]}
-          rows={registrations}
-        />
+        <div className="grid gap-6 lg:grid-cols-2">
+          {registrations.map((registration) => (
+            <GlassCard key={registration._id} className="overflow-hidden">
+              <img className="h-48 w-full rounded-[24px] object-cover" src={registration.event?.banner} alt={registration.event?.title} />
+              <div className="mt-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{registration.event?.category?.name}</p>
+                  <h3 className="mt-2 font-display text-3xl text-slate-950">{registration.event?.title}</h3>
+                </div>
+                {registration.qrCode ? <img className="h-20 w-20 rounded-2xl border border-white/70 bg-white p-2" src={registration.qrCode} alt="QR Code" /> : null}
+              </div>
+              <div className="mt-5 grid gap-3 text-sm text-slate-600">
+                <div>Ticket Code: {registration.ticketCode}</div>
+                <div>Status: {registration.status}</div>
+                <div>Venue: {registration.event?.venue}</div>
+                <div>Starts: {formatDate(registration.event?.startsAt, { withTime: true })}</div>
+                <div>Organizer: {registration.event?.organizer?.name}</div>
+                <div>Booked On: {formatDate(registration.createdAt, { withTime: true })}</div>
+              </div>
+              <div className="mt-6 flex gap-3">
+                <Link
+                  className="inline-flex rounded-full bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+                  to={`/events/${registration.event?.slug}`}
+                >
+                  Open Event
+                </Link>
+                <Button variant="secondary" onClick={() => toast.success(`Ticket: ${registration.ticketCode}`)}>
+                  View Ticket
+                </Button>
+              </div>
+            </GlassCard>
+          ))}
+        </div>
       ) : (
         <EmptyState title="No registrations yet" description="Register for an event to unlock ticket PDFs, QR codes, and attendance history." />
       )}
